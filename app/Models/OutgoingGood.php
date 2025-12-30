@@ -14,6 +14,7 @@ class OutgoingGood extends Model
 
     protected $fillable = [
         'product',
+        'category',
         'outgoing',
         'store',
         'date',

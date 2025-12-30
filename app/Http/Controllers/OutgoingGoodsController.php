@@ -32,14 +32,19 @@ class OutgoingGoodsController extends Controller
     {
         $validated = $request->validate([
             'product' => 'required|string|max:255',
+            'category' => 'required|in:Device,Liquid,Coil & Cartridge,Battery & Charger,Accessories,Atomizer,Tools & Spare Part',
             'outgoing' => 'required|integer|min:1',
             'store' => 'required|string|max:255',
             'date' => 'required|date',
         ]);
 
-        // Validasi stok tersedia
-        $totalIncoming = IncomingGood::where('product', $validated['product'])->sum('incoming');
-        $totalOutgoing = OutgoingGood::where('product', $validated['product'])->sum('outgoing');
+        // Validasi stok tersedia berdasarkan product dan category
+        $totalIncoming = IncomingGood::where('product', $validated['product'])
+            ->where('category', $validated['category'])
+            ->sum('incoming');
+        $totalOutgoing = OutgoingGood::where('product', $validated['product'])
+            ->where('category', $validated['category'])
+            ->sum('outgoing');
         $availableStock = $totalIncoming - $totalOutgoing;
 
         if ($validated['outgoing'] > $availableStock) {
@@ -76,14 +81,18 @@ class OutgoingGoodsController extends Controller
     {
         $validated = $request->validate([
             'product' => 'required|string|max:255',
+            'category' => 'required|in:Device,Liquid,Coil & Cartridge,Battery & Charger,Accessories,Atomizer,Tools & Spare Part',
             'outgoing' => 'required|integer|min:1',
             'store' => 'required|string|max:255',
             'date' => 'required|date',
         ]);
 
-        // Validasi stok tersedia (exclude current record)
-        $totalIncoming = IncomingGood::where('product', $validated['product'])->sum('incoming');
+        // Validasi stok tersedia berdasarkan product dan category (exclude current record)
+        $totalIncoming = IncomingGood::where('product', $validated['product'])
+            ->where('category', $validated['category'])
+            ->sum('incoming');
         $totalOutgoing = OutgoingGood::where('product', $validated['product'])
+            ->where('category', $validated['category'])
             ->where('id', '!=', $outgoingGood->id)
             ->sum('outgoing');
         $availableStock = $totalIncoming - $totalOutgoing;
