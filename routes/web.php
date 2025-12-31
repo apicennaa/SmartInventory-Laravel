@@ -4,6 +4,8 @@ use App\Http\Controllers\IncomingGoodsController;
 use App\Http\Controllers\OutgoingGoodsController;
 use App\Http\Controllers\ReportController;
 use App\Http\Controllers\UserManagementController;
+use App\Http\Controllers\AnalyticsController;
+use App\Http\Controllers\DashboardController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
@@ -60,9 +62,8 @@ Route::middleware(['auth', 'role:super_adm,admin,staff'])->group(function () {
 // Akses: super_adm, admin
 Route::middleware(['auth', 'role:super_adm,admin'])->group(function () {
     Route::prefix('analisis')->name('analisis.')->group(function () {
-        Route::get('/', function () {
-            return view('analisis.index');
-        })->name('index');
+        Route::get('/', [AnalyticsController::class, 'index'])
+            ->name('index');
     });
 });
 
@@ -91,4 +92,15 @@ Route::middleware(['auth', 'role:super_adm'])->group(function () {
     
     // Alias untuk kompatibilitas
     Route::get('/manajemen-pengguna', [UserManagementController::class, 'index'])->name('manajemen-pengguna.index');
+});
+
+
+
+// ============================================
+// Dashboard Routes
+// ============================================
+
+Route::middleware(['auth', 'role:super_adm,admin'])->group(function () {
+    Route::get('/dashboard', [DashboardController::class, 'index'])
+        ->name('dashboard.index'); 
 });
