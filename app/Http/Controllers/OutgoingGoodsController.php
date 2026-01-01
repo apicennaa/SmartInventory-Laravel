@@ -14,7 +14,12 @@ class OutgoingGoodsController extends Controller
     public function index()
     {
         $outgoingGoods = OutgoingGood::latest()->paginate(10);
-        return view('outgoing-goods.index', compact('outgoingGoods'));
+        $stats = [
+            'total_items' => OutgoingGood::count(),
+            'total_quantity' => OutgoingGood::sum('outgoing'),
+            'unique_stores' => OutgoingGood::distinct('store')->count('store'),
+        ];
+        return view('outgoing-goods.index', compact('outgoingGoods', 'stats'));
     }
 
     /**

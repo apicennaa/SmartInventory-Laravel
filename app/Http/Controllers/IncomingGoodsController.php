@@ -13,7 +13,12 @@ class IncomingGoodsController extends Controller
     public function index()
     {
         $incomingGoods = IncomingGood::latest()->paginate(10);
-        return view('incoming-goods.index', compact('incomingGoods'));
+        $stats = [
+            'total_items' => IncomingGood::count(),
+            'total_quantity' => IncomingGood::sum('incoming'),
+            'unique_suppliers' => IncomingGood::distinct('supplier')->count('supplier'),
+        ];
+        return view('incoming-goods.index', compact('incomingGoods', 'stats'));
     }
 
     /**
