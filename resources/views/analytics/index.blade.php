@@ -12,7 +12,7 @@
             <div class="max-w-[1400px] mx-auto flex flex-wrap items-center justify-between gap-4">
                 <div>
                     <h2 class="text-[#111218] text-2xl font-bold">Inventory Intelligence</h2>
-                    <p class="text-[#616989] text-sm">Monitoring health score dan analisis ABC</p>
+                    <p class="text-[#616989] text-sm">Monitoring health score dan Analysis ABC</p>
                 </div>
                 
                 <form action="{{ route('analisis.index') }}" method="GET" class="flex items-center gap-3">

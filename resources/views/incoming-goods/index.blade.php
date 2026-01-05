@@ -59,24 +59,37 @@
     <div class="p-6 border-b border-gray-200">
         <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
             <div class="flex flex-col sm:flex-row gap-3 flex-1">
+                <!-- Filter by Category -->
+                <div class="relative flex-1 max-w-md">
+                    <span class="material-symbols-outlined absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 text-lg">category</span>
+                    <select id="category_filter" class="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 text-sm">
+                        <option value="">All Categories</option>
+                        <option value="Device">Device</option>
+                        <option value="Liquid">Liquid</option>
+                        <option value="Coil & Cartridge">Coil & Cartridge</option>
+                        <option value="Battery & Charger">Battery & Charger</option>
+                        <option value="Accessories">Accessories</option>
+                        <option value="Atomizer">Atomizer</option>
+                        <option value="Tools & Spare Part">Tools & Spare Part</option>
+                    </select>
+                </div>
+
+                <!-- Filter by Date Range -->
+                <div class="relative flex-1 max-w-md">
+                    <span class="material-symbols-outlined absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 text-lg">date_range</span>
+                    <input type="date" id="date_filter" class="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 text-sm">
+                </div>
+
+                <!-- Search Input -->
                 <div class="relative flex-1 max-w-md">
                     <span class="material-symbols-outlined absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 text-lg">search</span>
-                    <input type="text" placeholder="Search product..." class="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 text-sm">
+                    <input type="text" id="search_filter" placeholder="Search product..." class="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 text-sm">
                 </div>
-                <select class="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 text-sm">
-                    <option>All Categories</option>
-                    <option>Device</option>
-                    <option>Liquid</option>
-                    <option>Coil & Cartridge</option>
-                    <option>Battery & Charger</option>
-                    <option>Accessories</option>
-                    <option>Atomizer</option>
-                    <option>Tools & Spare Part</option>
-                </select>
             </div>
         </div>
     </div>
 
+    <!-- Table with Data -->
     <div class="overflow-x-auto">
         <table class="min-w-full divide-y divide-gray-200">
             <thead class="bg-gray-50">
@@ -114,7 +127,7 @@
                     <td class="px-6 py-4 whitespace-nowrap">
                         <div class="text-sm font-medium text-gray-900">{{ $item->supplier }}</div>
                     </td>
-                    <td class="px-6 py-4 whitespace-nowrap">
+                    <td class="px-6 py-4 whitespace-nowrap" data-date="{{ $item->date->format('Y-m-d') }}">
                         <div class="text-sm text-gray-900">{{ $item->date->format('d M Y') }}</div>
                         <div class="text-xs text-gray-500">{{ $item->date->format('H:i') }}</div>
                     </td>
@@ -148,6 +161,7 @@
         </table>
     </div>
 
+    <!-- Pagination -->
     @if($incomingGoods->hasPages())
     <div class="p-6 border-t border-gray-200">
         <div class="flex items-center justify-between">
@@ -161,5 +175,43 @@
     </div>
     @endif
 </div>
-@endsection
 
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const categoryFilter = document.getElementById('category_filter');
+        const dateFilter = document.getElementById('date_filter');
+        const searchFilter = document.getElementById('search_filter');
+        const tableRows = document.querySelectorAll('tbody tr');
+
+        function filterTable() {
+            const categoryValue = categoryFilter.value.toLowerCase();
+            const dateValue = dateFilter.value;  // Format: YYYY-MM-DD
+            const searchValue = searchFilter.value.toLowerCase();
+
+            tableRows.forEach(row => {
+                const product = row.querySelector('td:nth-child(1)').textContent.toLowerCase();
+                const category = row.querySelector('td:nth-child(3)').textContent.toLowerCase();
+                const dateText = row.querySelector('td:nth-child(5)').textContent.toLowerCase();
+
+                // Ambil tanggal dari data-date atribut dalam format YYYY-MM-DD
+                const rowDate = row.querySelector('td:nth-child(5)').dataset.date;
+
+                // Cek apakah tanggal yang dipilih cocok dengan format tanggal di row
+                const matchesCategory = categoryValue ? category.includes(categoryValue) : true;
+                const matchesDate = dateValue ? rowDate === dateValue : true;
+                const matchesSearch = product.includes(searchValue);
+
+                if (matchesCategory && matchesDate && matchesSearch) {
+                    row.style.display = '';
+                } else {
+                    row.style.display = 'none';
+                }
+            });
+        }
+
+        categoryFilter.addEventListener('change', filterTable);
+        dateFilter.addEventListener('change', filterTable);
+        searchFilter.addEventListener('input', filterTable);
+    });
+</script>
+@endsection
