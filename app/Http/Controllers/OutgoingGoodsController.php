@@ -5,21 +5,101 @@ namespace App\Http\Controllers;
 use App\Models\OutgoingGood;
 use App\Models\IncomingGood;
 use Illuminate\Http\Request;
+use Barryvdh\DomPDF\Facade\Pdf;
 
 class OutgoingGoodsController extends Controller
 {
     /**
      * Display a listing of the resource.
      */
-    public function index()
+    public function index(Request $request)
     {
-        $outgoingGoods = OutgoingGood::latest()->paginate(10);
+        $query = OutgoingGood::query();
+
+        // Filter by search (product name)
+        if ($request->filled('search')) {
+            $query->where('product', 'like', '%' . $request->search . '%');
+        }
+
+        // Filter by category
+        if ($request->filled('category')) {
+            $query->where('category', $request->category);
+        }
+
+        // Filter by store
+        if ($request->filled('store')) {
+            $query->where('store', 'like', '%' . $request->store . '%');
+        }
+
+        // Filter by date range
+        if ($request->filled('start_date')) {
+            $query->whereDate('date', '>=', $request->start_date);
+        }
+
+        if ($request->filled('end_date')) {
+            $query->whereDate('date', '<=', $request->end_date);
+        }
+
+        // Clone query for stats calculation (before pagination)
+        $statsQuery = clone $query;
+
+        $outgoingGoods = $query->latest()->paginate(10)->withQueryString();
+        
+        // Stats based on filtered data
         $stats = [
-            'total_items' => OutgoingGood::count(),
-            'total_quantity' => OutgoingGood::sum('outgoing'),
-            'unique_stores' => OutgoingGood::distinct('store')->count('store'),
+            'total_items' => $statsQuery->count(),
+            'total_quantity' => $statsQuery->sum('outgoing'),
+            'unique_stores' => $statsQuery->distinct('store')->count('store'),
         ];
-        return view('outgoing-goods.index', compact('outgoingGoods', 'stats'));
+
+        // Get unique stores for filter dropdown
+        $stores = OutgoingGood::select('store')->distinct()->orderBy('store')->pluck('store');
+
+        return view('outgoing-goods.index', compact('outgoingGoods', 'stats', 'stores'));
+    }
+
+    /**
+     * Export outgoing goods to PDF
+     */
+    public function exportPdf(Request $request)
+    {
+        $query = OutgoingGood::query();
+
+        // Apply same filters as index
+        if ($request->filled('search')) {
+            $query->where('product', 'like', '%' . $request->search . '%');
+        }
+
+        if ($request->filled('category')) {
+            $query->where('category', $request->category);
+        }
+
+        if ($request->filled('store')) {
+            $query->where('store', 'like', '%' . $request->store . '%');
+        }
+
+        if ($request->filled('start_date')) {
+            $query->whereDate('date', '>=', $request->start_date);
+        }
+
+        if ($request->filled('end_date')) {
+            $query->whereDate('date', '<=', $request->end_date);
+        }
+
+        $outgoingGoods = $query->latest()->get();
+
+        $filters = [
+            'search' => $request->search,
+            'category' => $request->category,
+            'store' => $request->store,
+            'start_date' => $request->start_date,
+            'end_date' => $request->end_date,
+        ];
+
+        $pdf = Pdf::loadView('exports.outgoing-goods-pdf', compact('outgoingGoods', 'filters'));
+        $pdf->setPaper('a4', 'landscape');
+
+        return $pdf->download('outgoing-goods-' . date('Y-m-d') . '.pdf');
     }
 
     /**

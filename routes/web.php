@@ -52,6 +52,7 @@ Route::middleware(['auth', 'role:super_adm,admin,staff'])->group(function () {
 // ============================================
 // Akses: super_adm, admin, staff (semua role)
 Route::middleware(['auth', 'role:super_adm,admin,staff'])->group(function () {
+    Route::get('/outgoing-goods/export-pdf', [OutgoingGoodsController::class, 'exportPdf'])->name('outgoing-goods.export-pdf');
     Route::resource('outgoing-goods', OutgoingGoodsController::class);
     Route::get('/barang-keluar', [OutgoingGoodsController::class, 'index'])->name('barang-keluar.index');
 });
@@ -75,6 +76,7 @@ Route::middleware(['auth', 'role:super_adm'])->group(function () {
     Route::prefix('reports')->name('reports.')->group(function () {
         Route::get('/', [ReportController::class, 'index'])->name('index');
         Route::post('/export', [ReportController::class, 'export'])->name('export');
+        Route::get('/export-pdf', [ReportController::class, 'exportPdf'])->name('export-pdf');
     });
     
     // Alias untuk kompatibilitas

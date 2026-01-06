@@ -6,6 +6,7 @@ use App\Models\IncomingGood;
 use App\Models\OutgoingGood;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Barryvdh\DomPDF\Facade\Pdf;
 
 class ReportController extends Controller
 {
@@ -32,15 +33,41 @@ class ReportController extends Controller
     }
 
     /**
-     * Export reports
+     * Export reports to JSON (legacy)
      */
     public function export(Request $request)
     {
-        $query = $this->buildQuery($request);
-        $reports = $query->get();
+        $reports = $this->buildQuery($request);
 
-        // TODO: Implement export to PDF/Excel
         return response()->json($reports);
+    }
+
+    /**
+     * Export reports to PDF
+     */
+    public function exportPdf(Request $request)
+    {
+        $reports = $this->buildQuery($request);
+
+        $filters = [
+            'entry_date' => $request->entry_date,
+            'exit_date' => $request->exit_date,
+            'category' => $request->category,
+            'type' => $request->type,
+            'search' => $request->search,
+        ];
+
+        // Calculate totals
+        $totals = [
+            'incoming' => $reports->sum('incoming'),
+            'outgoing' => $reports->sum('outgoing'),
+            'stock' => $reports->sum('stock'),
+        ];
+
+        $pdf = Pdf::loadView('exports.reports-pdf', compact('reports', 'filters', 'totals'));
+        $pdf->setPaper('a4', 'landscape');
+
+        return $pdf->download('inventory-report-' . date('Y-m-d') . '.pdf');
     }
 
     /**
@@ -56,8 +83,20 @@ class ReportController extends Controller
         // Build report data
         $reports = collect();
         foreach ($allProducts as $product) {
-            $totalIncoming = IncomingGood::where('product', $product)->sum('incoming');
-            $totalOutgoing = OutgoingGood::where('product', $product)->sum('outgoing');
+            $incomingQuery = IncomingGood::where('product', $product);
+            $outgoingQuery = OutgoingGood::where('product', $product);
+
+            // Apply date filters to incoming/outgoing queries
+            if ($request->filled('entry_date')) {
+                $incomingQuery->whereDate('date', '>=', $request->entry_date);
+            }
+            if ($request->filled('exit_date')) {
+                $incomingQuery->whereDate('date', '<=', $request->exit_date);
+                $outgoingQuery->whereDate('date', '<=', $request->exit_date);
+            }
+
+            $totalIncoming = $incomingQuery->sum('incoming');
+            $totalOutgoing = $outgoingQuery->sum('outgoing');
             $stock = $totalIncoming - $totalOutgoing;
             
             $latestOutgoing = OutgoingGood::where('product', $product)
@@ -76,25 +115,14 @@ class ReportController extends Controller
             ]);
         }
 
-        // Apply filters
-        if ($request->filled('entry_date')) {
-            $reports = $reports->filter(function ($item) use ($request) {
-                return $item['sales_date'] && $item['sales_date'] >= $request->entry_date;
-            });
-        }
-
-        if ($request->filled('exit_date')) {
-            $reports = $reports->filter(function ($item) use ($request) {
-                return $item['sales_date'] && $item['sales_date'] <= $request->exit_date;
-            });
-        }
-
+        // Apply category filter
         if ($request->filled('category')) {
             $reports = $reports->filter(function ($item) use ($request) {
                 return $item['category'] === $request->category;
             });
         }
 
+        // Apply type filter
         if ($request->filled('type')) {
             if ($request->type === 'incoming') {
                 $reports = $reports->filter(function ($item) {
@@ -107,6 +135,7 @@ class ReportController extends Controller
             }
         }
 
+        // Apply search filter
         if ($request->filled('search')) {
             $reports = $reports->filter(function ($item) use ($request) {
                 return stripos($item['product'], $request->search) !== false;
@@ -116,4 +145,5 @@ class ReportController extends Controller
         return $reports->sortBy('product')->values();
     }
 }
+
 

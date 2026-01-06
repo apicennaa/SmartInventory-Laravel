@@ -11,10 +11,16 @@
             <h1 class="text-2xl font-bold text-gray-900">Outgoing Goods</h1>
             <p class="text-sm text-gray-500 mt-1">Manage outgoing inventory items</p>
         </div>
-        <a href="{{ route('outgoing-goods.create') }}" class="flex items-center gap-2 bg-purple-600 hover:bg-purple-700 text-white px-4 py-2.5 rounded-lg font-medium transition-colors shadow-sm hover:shadow-md">
-            <span class="material-symbols-outlined text-lg">add</span>
-            Add Outgoing Goods
-        </a>
+        <div class="flex items-center gap-3">
+            <a href="{{ route('outgoing-goods.export-pdf', request()->query()) }}" class="flex items-center gap-2 bg-red-600 hover:bg-red-700 text-white px-4 py-2.5 rounded-lg font-medium transition-colors shadow-sm hover:shadow-md">
+                <span class="material-symbols-outlined text-lg">picture_as_pdf</span>
+                Export PDF
+            </a>
+            <a href="{{ route('outgoing-goods.create') }}" class="flex items-center gap-2 bg-purple-600 hover:bg-purple-700 text-white px-4 py-2.5 rounded-lg font-medium transition-colors shadow-sm hover:shadow-md">
+                <span class="material-symbols-outlined text-lg">add</span>
+                Add Outgoing Goods
+            </a>
+        </div>
     </div>
 </div>
 
@@ -55,28 +61,56 @@
     </div>
 </div>
 
-<div class="bg-white rounded-xl border border-gray-200 shadow-sm">
-    <div class="p-6 border-b border-gray-200">
-        <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-            <div class="flex flex-col sm:flex-row gap-3 flex-1">
-                <div class="relative flex-1 max-w-md">
+<!-- Filter Card -->
+<div class="bg-white rounded-xl border border-gray-200 shadow-sm mb-6">
+    <form action="{{ route('outgoing-goods.index') }}" method="GET" class="p-6">
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-4">
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Search Product</label>
+                <div class="relative">
                     <span class="material-symbols-outlined absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 text-lg">search</span>
-                    <input type="text" placeholder="Search product..." class="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 text-sm">
+                    <input type="text" name="search" value="{{ request('search') }}" placeholder="Search product..." class="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 text-sm">
                 </div>
-                <select class="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 text-sm">
-                    <option>All Categories</option>
-                    <option>Device</option>
-                    <option>Liquid</option>
-                    <option>Coil & Cartridge</option>
-                    <option>Battery & Charger</option>
-                    <option>Accessories</option>
-                    <option>Atomizer</option>
-                    <option>Tools & Spare Part</option>
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Category</label>
+                <select name="category" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 text-sm">
+                    <option value="">All Categories</option>
+                    <option value="Device" {{ request('category') == 'Device' ? 'selected' : '' }}>Device</option>
+                    <option value="Liquid" {{ request('category') == 'Liquid' ? 'selected' : '' }}>Liquid</option>
+                    <option value="Coil & Cartridge" {{ request('category') == 'Coil & Cartridge' ? 'selected' : '' }}>Coil & Cartridge</option>
+                    <option value="Battery & Charger" {{ request('category') == 'Battery & Charger' ? 'selected' : '' }}>Battery & Charger</option>
+                    <option value="Accessories" {{ request('category') == 'Accessories' ? 'selected' : '' }}>Accessories</option>
+                    <option value="Atomizer" {{ request('category') == 'Atomizer' ? 'selected' : '' }}>Atomizer</option>
+                    <option value="Tools & Spare Part" {{ request('category') == 'Tools & Spare Part' ? 'selected' : '' }}>Tools & Spare Part</option>
                 </select>
             </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Store</label>
+                <input type="text" name="store" value="{{ request('store') }}" placeholder="Filter by store..." class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 text-sm">
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Start Date</label>
+                <input type="date" name="start_date" value="{{ request('start_date') }}" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 text-sm">
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">End Date</label>
+                <input type="date" name="end_date" value="{{ request('end_date') }}" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 text-sm">
+            </div>
+            <div class="flex items-end gap-2">
+                <button type="submit" class="flex-1 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-medium transition-colors flex items-center justify-center gap-2">
+                    <span class="material-symbols-outlined text-lg">filter_alt</span>
+                    Filter
+                </button>
+                <a href="{{ route('outgoing-goods.index') }}" class="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors flex items-center justify-center" title="Reset">
+                    <span class="material-symbols-outlined text-lg">refresh</span>
+                </a>
+            </div>
         </div>
-    </div>
+    </form>
+</div>
 
+<div class="bg-white rounded-xl border border-gray-200 shadow-sm">
     <div class="overflow-x-auto">
         <table class="min-w-full divide-y divide-gray-200">
             <thead class="bg-gray-50">
@@ -116,7 +150,6 @@
                     </td>
                     <td class="px-6 py-4 whitespace-nowrap">
                         <div class="text-sm text-gray-900">{{ $item->date->format('d M Y') }}</div>
-                        <div class="text-xs text-gray-500">{{ $item->date->format('H:i') }}</div>
                     </td>
                     <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                         <div class="flex items-center justify-end gap-2">
@@ -139,7 +172,7 @@
                         <div class="flex flex-col items-center">
                             <span class="material-symbols-outlined text-gray-400 text-5xl mb-3">output</span>
                             <p class="text-gray-500 font-medium">No outgoing goods found</p>
-                            <p class="text-sm text-gray-400 mt-1">Get started by adding your first outgoing item</p>
+                            <p class="text-sm text-gray-400 mt-1">Try adjusting your filters or add a new item</p>
                         </div>
                     </td>
                 </tr>
