@@ -75,35 +75,83 @@ class ReportController extends Controller
      */
     private function buildQuery(Request $request)
     {
-        // Get all unique products
-        $incomingProducts = IncomingGood::select('product')->distinct()->pluck('product');
-        $outgoingProducts = OutgoingGood::select('product')->distinct()->pluck('product');
-        $allProducts = $incomingProducts->merge($outgoingProducts)->unique();
+        // Get filter values
+        $entryDate = $request->entry_date;
+        $exitDate = $request->exit_date;
+        $categoryFilter = $request->category;
+        $typeFilter = $request->type;
+        $searchFilter = $request->search;
+
+        // Build incoming query with date filter
+        $incomingQuery = IncomingGood::query();
+        if ($entryDate) {
+            $incomingQuery->whereDate('date', '>=', $entryDate);
+        }
+        if ($exitDate) {
+            $incomingQuery->whereDate('date', '<=', $exitDate);
+        }
+
+        // Build outgoing query with date filter
+        $outgoingQuery = OutgoingGood::query();
+        if ($entryDate) {
+            $outgoingQuery->whereDate('date', '>=', $entryDate);
+        }
+        if ($exitDate) {
+            $outgoingQuery->whereDate('date', '<=', $exitDate);
+        }
+
+        // Get products based on type filter
+        if ($typeFilter === 'incoming') {
+            // Only show products that have incoming transactions in the date range
+            $allProducts = $incomingQuery->select('product')->distinct()->pluck('product');
+        } elseif ($typeFilter === 'outgoing') {
+            // Only show products that have outgoing transactions in the date range
+            $allProducts = $outgoingQuery->select('product')->distinct()->pluck('product');
+        } else {
+            // Show all products that have any transaction in the date range
+            $incomingProducts = $incomingQuery->select('product')->distinct()->pluck('product');
+            $outgoingProducts = $outgoingQuery->select('product')->distinct()->pluck('product');
+            $allProducts = $incomingProducts->merge($outgoingProducts)->unique();
+        }
 
         // Build report data
         $reports = collect();
         foreach ($allProducts as $product) {
-            $incomingQuery = IncomingGood::where('product', $product);
-            $outgoingQuery = OutgoingGood::where('product', $product);
-
-            // Apply date filters to incoming/outgoing queries
-            if ($request->filled('entry_date')) {
-                $incomingQuery->whereDate('date', '>=', $request->entry_date);
+            // Get incoming sum with date filter
+            $incomingSum = IncomingGood::where('product', $product);
+            if ($entryDate) {
+                $incomingSum->whereDate('date', '>=', $entryDate);
             }
-            if ($request->filled('exit_date')) {
-                $incomingQuery->whereDate('date', '<=', $request->exit_date);
-                $outgoingQuery->whereDate('date', '<=', $request->exit_date);
+            if ($exitDate) {
+                $incomingSum->whereDate('date', '<=', $exitDate);
             }
+            $totalIncoming = $incomingSum->sum('incoming');
 
-            $totalIncoming = $incomingQuery->sum('incoming');
-            $totalOutgoing = $outgoingQuery->sum('outgoing');
+            // Get outgoing sum with date filter
+            $outgoingSum = OutgoingGood::where('product', $product);
+            if ($entryDate) {
+                $outgoingSum->whereDate('date', '>=', $entryDate);
+            }
+            if ($exitDate) {
+                $outgoingSum->whereDate('date', '<=', $exitDate);
+            }
+            $totalOutgoing = $outgoingSum->sum('outgoing');
+
             $stock = $totalIncoming - $totalOutgoing;
             
-            $latestOutgoing = OutgoingGood::where('product', $product)
-                ->orderBy('date', 'desc')
-                ->first();
+            // Get latest outgoing within date range
+            $latestOutgoingQuery = OutgoingGood::where('product', $product);
+            if ($entryDate) {
+                $latestOutgoingQuery->whereDate('date', '>=', $entryDate);
+            }
+            if ($exitDate) {
+                $latestOutgoingQuery->whereDate('date', '<=', $exitDate);
+            }
+            $latestOutgoing = $latestOutgoingQuery->orderBy('date', 'desc')->first();
             
-            $category = IncomingGood::where('product', $product)->first()?->category ?? '';
+            $category = IncomingGood::where('product', $product)->first()?->category 
+                ?? OutgoingGood::where('product', $product)->first()?->category 
+                ?? '';
 
             $reports->push([
                 'product' => $product,
@@ -116,29 +164,16 @@ class ReportController extends Controller
         }
 
         // Apply category filter
-        if ($request->filled('category')) {
-            $reports = $reports->filter(function ($item) use ($request) {
-                return $item['category'] === $request->category;
+        if ($categoryFilter) {
+            $reports = $reports->filter(function ($item) use ($categoryFilter) {
+                return $item['category'] === $categoryFilter;
             });
         }
 
-        // Apply type filter
-        if ($request->filled('type')) {
-            if ($request->type === 'incoming') {
-                $reports = $reports->filter(function ($item) {
-                    return $item['incoming'] > 0;
-                });
-            } elseif ($request->type === 'outgoing') {
-                $reports = $reports->filter(function ($item) {
-                    return $item['outgoing'] > 0;
-                });
-            }
-        }
-
         // Apply search filter
-        if ($request->filled('search')) {
-            $reports = $reports->filter(function ($item) use ($request) {
-                return stripos($item['product'], $request->search) !== false;
+        if ($searchFilter) {
+            $reports = $reports->filter(function ($item) use ($searchFilter) {
+                return stripos($item['product'], $searchFilter) !== false;
             });
         }
 
