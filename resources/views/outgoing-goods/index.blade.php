@@ -12,10 +12,6 @@
             <p class="text-sm text-gray-500 mt-1">Manage outgoing inventory items</p>
         </div>
         <div class="flex items-center gap-3">
-            <a href="{{ route('outgoing-goods.export-pdf', request()->query()) }}" class="flex items-center gap-2 bg-red-600 hover:bg-red-700 text-white px-4 py-2.5 rounded-lg font-medium transition-colors shadow-sm hover:shadow-md">
-                <span class="material-symbols-outlined text-lg">picture_as_pdf</span>
-                Export PDF
-            </a>
             <a href="{{ route('outgoing-goods.create') }}" class="flex items-center gap-2 bg-purple-600 hover:bg-purple-700 text-white px-4 py-2.5 rounded-lg font-medium transition-colors shadow-sm hover:shadow-md">
                 <span class="material-symbols-outlined text-lg">add</span>
                 Add Outgoing Goods
